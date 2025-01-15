@@ -31,16 +31,6 @@ void i2c_write_byte(uint8_t reg, uint8_t data) {
     i2c_write_blocking(I2C_PORT, I2C_ADDRESS, buf, 2, false);
 }
 
-// void i2c_write_bootloader(uint8_t reg,uint8_t cmd,  uint8_t datasize,uint8_t data) {
-//     uint8_t size=datasize+4;
-//     // uint8_t buf[size] = {reg, data};
-//     uint8_t buf[size];
-//     buf[0]=reg;
-//     buf[1]=cmd;
-//     buf[2]=datasize;    
-//     i2c_write_blocking(I2C_PORT, I2C_ADDRESS, buf, 2, false);
-// }
-
 // I²C读一个字节
 uint8_t i2c_read_byte(uint8_t reg) {
     uint8_t data;
@@ -97,10 +87,7 @@ void write_ram(uint8_t *data, uint8_t data_length) {
         buf[3 + i] = data[i];
     }
     buf[3 + data_length] = checksum;
-
     i2c_write_blocking(I2C_PORT, I2C_ADDRESS, buf, 3 + data_length + 1, false);
-
-    // printf("W_RAM command sent with %d bytes of data.\n", data_length);
 }
 
 // 完成下载并重启设备
@@ -121,7 +108,6 @@ void check_device_ready() {
 
     while (1) {
         enable_value = i2c_read_byte(ENABLE_REG);  // 读取ENABLE寄存器的值
-
         // 检查设备状态
         if ((enable_value & 0x41) == 0x41) {
             // 设备已准备好通信 (bit 6 = 1)
@@ -233,11 +219,6 @@ void read_measurement_results() {
         i2c_read_blocking(I2C_PORT, I2C_ADDRESS, &dl, 1, false);  // 读取结果数据
  
          printf("value: 0x%02X%02X\n", dm, dl);
-
-        // printf("Measurement results: ");
-        // for (int i =20 ; i < 29; i++) {
-        //     printf("%02X ", data[i]);
-        // }
         printf("\n");
     } else {
         printf("Unexpected result ID: 0x%02X\n", result_id);
@@ -341,7 +322,7 @@ int main() {
         printf("Check configuration register value: 0x%02X 0x%02X 0x%02X 0x%02X\n", da[0], da[1], da[2], da[3]);
         if((da[0]==0x16)&&(da[2]==0xbc)&&(da[3]==0x00))
             break;
-        sleep_ms(20);   
+        sleep_ms(20);           
     }
 
     // 步骤2: 配置测量周期为100ms
@@ -350,76 +331,20 @@ int main() {
     // 步骤3: 选择SPAD掩码6
     set_spad_mask();
     i2c_write_byte(0x31, 0x03);  
-        write_common_config();
+    write_common_config();
 
-    // i2c_write_byte(0x08, 0x19);  
-    // while (i2c_read_byte(CMD_STAT_REG) != 0x00) {  // 等待命令完成
-    //     sleep_ms(10);
-    // }
-    // printf("factory load.\n");
-
-    // while(true)
-    // {
-    //     i2c_write_blocking(I2C_PORT, I2C_ADDRESS, &r, 1, true);  // 发送寄存器地址
-    //     i2c_read_blocking(I2C_PORT, I2C_ADDRESS, da, 4, false); // 读取数据
-    //     printf("Check configuration register value: 0x%02X 0x%02X 0x%02X 0x%02X\n", da[0], da[1], da[2], da[3]);
-    //     if((da[0]==0x19)&&(da[2]==0xbc)&&(da[3]==0x00))
-    //         break;
-    //     sleep_ms(20);   
-    // }
-
-    // i2c_write_byte(0x08, 0x15);  
-    // while (i2c_read_byte(CMD_STAT_REG) != 0x00) {  // 等待命令完成
-    //     sleep_ms(10);
-    // }
-    // printf("factory load.\n");
     printf("Check factory register value: 0x%02X\n", i2c_read_byte(0x07));
-
-
 
     // 步骤5: 启用结果中断
     enable_interrupts();
 
     // 步骤6: 清除中断
     clear_interrupts();
-     
-    
+         
     gpio_set_irq_enabled_with_callback(21, GPIO_IRQ_EDGE_FALL, true, &gpio_callback);
 
     // 步骤7: 启动测量
     start_measurement();
-
-    // // 步骤8: 读取测量结果
-    // sleep_ms(100);  // 等待1秒以获取测量结果
-    // read_measurement_results();
-
-    // // 步骤9: 停止测量
-    // stop_measurement();
-// while (gpio_get(21))
-// {
-//     ;
-// }
-// while (!gpio_get(21))
-// {
-//     ;
-// }
-
-//     uint8_t dataa=0;
-//     printf("measure finish\n");
-//     dataa=i2c_read_byte(0xe1);
-//     printf("int register value: 0x%02X\n", dataa);
-//     i2c_write_byte(0xe1,dataa);
-//     read_measurement_results();
-    
-//     while (gpio_get(21))
-// {
-//     ;
-// }
-
-//     printf("measure finish\n");
-//     dataa=i2c_read_byte(0xe1);
-//     i2c_write_byte(0xe1,dataa);
-//     read_measurement_results();
 
     while (1) {
         // 主循环
