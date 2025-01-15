@@ -40,6 +40,7 @@ if (TARGET tinyusb_device)
     add_executable(hello_usb
             hello_usb.c
             tmf882x_image.c
+            tmf8821.c
             )
 
     # pull in common dependencies
