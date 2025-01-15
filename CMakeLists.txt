@@ -34,10 +34,12 @@ project(hello_usb C CXX ASM)
 pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
+include_directories(.)
 
 if (TARGET tinyusb_device)
     add_executable(hello_usb
             hello_usb.c
+            tmf882x_image.c
             )
 
     # pull in common dependencies
