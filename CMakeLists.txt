@@ -41,6 +41,7 @@ if (TARGET tinyusb_device)
             hello_usb.c
             tmf882x_image.c
             tmf8821.c
+            i2c_usr.c
             )
 
     # pull in common dependencies

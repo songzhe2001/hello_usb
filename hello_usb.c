@@ -10,11 +10,10 @@ void gpio_callback(uint gpio, uint32_t events)
 {
     uint8_t dataa = 0;
     printf("measure finish\n");
-    dataa = i2c_read_byte(0xe1);
-    i2c_write_byte(0xe1, dataa);
+    // dataa = i2c_read_byte(0xe1);
+    i2c_write_byte(0xe1, i2c_read_byte(0xe1));
     read_measurement_results();
 }
-
 
 int main()
 {
