@@ -386,7 +386,7 @@ void load_common_config() {
 
 // 配置测量周期为100ms
 void set_measurement_period() {
-    i2c_write_byte(0x24, 0x64);  // 设置测量周期为100ms
+    i2c_write_byte(0x24, 0xc8);  // 设置测量周期为100ms
     i2c_write_byte(0x25, 0x00);  // 高位字节
     printf("Measurement period set to 100ms.\n");
 }
@@ -444,23 +444,44 @@ void read_measurement_results() {
         uint8_t reg=0x20;
         i2c_write_blocking(I2C_PORT, I2C_ADDRESS, &reg, 1, true);  // 设置读取起始地址
         i2c_read_blocking(I2C_PORT, I2C_ADDRESS, data, sizeof(data), false);  // 读取结果数据
-        printf("Measurement results: ");
-        for (int i = 0; i < sizeof(data); i++) {
-            printf("%02X ", data[i]);
-        }
+        uint8_t dm;
+        uint8_t dl;
+        reg=0x3A;
+        i2c_write_blocking(I2C_PORT, I2C_ADDRESS, &reg, 1, true);  // 设置读取起始地址
+        i2c_read_blocking(I2C_PORT, I2C_ADDRESS, &dm, 1, false);  // 读取结果数据
+        
+        reg=0x39;
+        i2c_write_blocking(I2C_PORT, I2C_ADDRESS, &reg, 1, true);  // 设置读取起始地址
+        i2c_read_blocking(I2C_PORT, I2C_ADDRESS, &dl, 1, false);  // 读取结果数据
+ 
+         printf("value: 0x%02X%02X\n", dm, dl);
+
+        // printf("Measurement results: ");
+        // for (int i =20 ; i < 29; i++) {
+        //     printf("%02X ", data[i]);
+        // }
         printf("\n");
     } else {
         printf("Unexpected result ID: 0x%02X\n", result_id);
     }
 }
 
+void gpio_callback(uint gpio, uint32_t events) {
+    uint8_t dataa=0;
+    printf("measure finish\n");
+    dataa=i2c_read_byte(0xe1);
+    i2c_write_byte(0xe1,dataa);
+    read_measurement_results();
+}
+
 int main() {
     stdio_init_all();  // 初始化标准I/O
-        i2c_init_bus();    // 初始化I²C总线
-
-        gpio_init(22);
+    i2c_init_bus();    // 初始化I²C总线
+    gpio_init(22);
     gpio_set_dir(22, GPIO_OUT);
-        gpio_put(22, 1);
+    gpio_init(21);
+    gpio_set_dir(21, GPIO_IN);
+    gpio_put(22, 1);
     i2c_write_byte(0xE0,0x01);
 
     sleep_ms(5000);  //等待串口
@@ -474,6 +495,7 @@ int main() {
     i2c_write_blocking(I2C_PORT, I2C_ADDRESS, bu, 5, false);
     uint8_t re=0x08;
     uint8_t dat[3];
+    uint8_t da[3];
     uint8_t i=0;
 
     while(true)
@@ -487,7 +509,7 @@ int main() {
     }
     set_address(0x0000);
 
-   while(true)
+    while(true)
     {
         sleep_ms(20);
         i2c_write_blocking(I2C_PORT, I2C_ADDRESS, &re, 1, true);  // 发送寄存器地址
@@ -524,55 +546,102 @@ int main() {
 
     }
 
-ram_remap_reset();
+    ram_remap_reset();
 
     // 等待设备重启并检查APPID
-    sleep_ms(2500);  // 等待2.5秒
+    sleep_ms(3);  // 等待2.5秒
     uint8_t appid = i2c_read_byte(APPID_REG);
      printf("APPID: 0x%02X\n", appid);
 
-load_common_config();
+    load_common_config();
+    uint8_t r=0x20;
+
+    while(true)
+    {
+        i2c_write_blocking(I2C_PORT, I2C_ADDRESS, &r, 1, true);  // 发送寄存器地址
+        i2c_read_blocking(I2C_PORT, I2C_ADDRESS, da, 4, false); // 读取数据
+        printf("Check configuration register value: 0x%02X 0x%02X 0x%02X 0x%02X\n", da[0], da[1], da[2], da[3]);
+        if((da[0]==0x16)&&(da[2]==0xbc)&&(da[3]==0x00))
+            break;
+        sleep_ms(20);   
+    }
 
     // 步骤2: 配置测量周期为100ms
     set_measurement_period();
 
     // 步骤3: 选择SPAD掩码6
     set_spad_mask();
-
+    i2c_write_byte(0x31, 0x03);  
         write_common_config();
+
+    // i2c_write_byte(0x08, 0x19);  
+    // while (i2c_read_byte(CMD_STAT_REG) != 0x00) {  // 等待命令完成
+    //     sleep_ms(10);
+    // }
+    // printf("factory load.\n");
+
+    // while(true)
+    // {
+    //     i2c_write_blocking(I2C_PORT, I2C_ADDRESS, &r, 1, true);  // 发送寄存器地址
+    //     i2c_read_blocking(I2C_PORT, I2C_ADDRESS, da, 4, false); // 读取数据
+    //     printf("Check configuration register value: 0x%02X 0x%02X 0x%02X 0x%02X\n", da[0], da[1], da[2], da[3]);
+    //     if((da[0]==0x19)&&(da[2]==0xbc)&&(da[3]==0x00))
+    //         break;
+    //     sleep_ms(20);   
+    // }
+
+    // i2c_write_byte(0x08, 0x15);  
+    // while (i2c_read_byte(CMD_STAT_REG) != 0x00) {  // 等待命令完成
+    //     sleep_ms(10);
+    // }
+    // printf("factory load.\n");
+    printf("Check factory register value: 0x%02X\n", i2c_read_byte(0x07));
+
+
 
     // 步骤5: 启用结果中断
     enable_interrupts();
 
     // 步骤6: 清除中断
     clear_interrupts();
-
-    i2c_write_byte(0x08, 0x19);  // 启动测量
-    while (i2c_read_byte(CMD_STAT_REG) != 0x00) {  // 等待命令完成
-        sleep_ms(10);
-    }
-    printf("factory load.\n");
-
+     
     
-   i2c_write_byte(0x08, 0x15);  // 启动测量
-    while (i2c_read_byte(CMD_STAT_REG) != 0x00) {  // 等待命令完成
-        sleep_ms(10);
-    }
-    printf("factory load.\n");
-
-// 步骤6: 清除中断
-    clear_interrupts();
-    
+    gpio_set_irq_enabled_with_callback(21, GPIO_IRQ_EDGE_FALL, true, &gpio_callback);
 
     // 步骤7: 启动测量
     start_measurement();
 
-    // 步骤8: 读取测量结果
-    sleep_ms(100);  // 等待1秒以获取测量结果
-    read_measurement_results();
+    // // 步骤8: 读取测量结果
+    // sleep_ms(100);  // 等待1秒以获取测量结果
+    // read_measurement_results();
 
-    // 步骤9: 停止测量
-    stop_measurement();
+    // // 步骤9: 停止测量
+    // stop_measurement();
+// while (gpio_get(21))
+// {
+//     ;
+// }
+// while (!gpio_get(21))
+// {
+//     ;
+// }
+
+//     uint8_t dataa=0;
+//     printf("measure finish\n");
+//     dataa=i2c_read_byte(0xe1);
+//     printf("int register value: 0x%02X\n", dataa);
+//     i2c_write_byte(0xe1,dataa);
+//     read_measurement_results();
+    
+//     while (gpio_get(21))
+// {
+//     ;
+// }
+
+//     printf("measure finish\n");
+//     dataa=i2c_read_byte(0xe1);
+//     i2c_write_byte(0xe1,dataa);
+//     read_measurement_results();
 
     while (1) {
         // 主循环
