@@ -5,14 +5,26 @@
 #include "tmf8821.h"
 
 extern const unsigned char tmf882x_image[];
+uint16_t res[27];
+uint8_t res_re=0;
 
 void gpio_callback(uint gpio, uint32_t events)
 {
     uint8_t dataa = 0;
-    printf("measure finish\n");
-    // dataa = i2c_read_byte(0xe1);
     i2c_write_byte(0xe1, i2c_read_byte(0xe1));
-    read_measurement_results();
+    read_measurement_results((uint16_t *) res);
+  
+    printf("value:\n");
+    printf(" 0x%02X%02X  ", res[2], res[1]);
+    printf(" 0x%02X%02X  ", res[5], res[4]);
+    printf(" 0x%02X%02X\n", res[8], res[7]);
+    printf(" 0x%02X%02X  ", res[11], res[10]);
+    printf(" 0x%02X%02X  ", res[14], res[13]);
+    printf(" 0x%02X%02X\n", res[17], res[16]);
+    printf(" 0x%02X%02X  ", res[20], res[19]);
+    printf(" 0x%02X%02X  ", res[23], res[22]);
+    printf(" 0x%02X%02X\n\n", res[26], res[25]);
+
 }
 
 int main()
@@ -95,8 +107,13 @@ int main()
 
     while (1)
     {
-        // 主循环
-        ;
+        // printf("%d",res_re);
+        if(res_re==1)
+        {
+            printf("value: 0x%02X%02X\n", res[1], res[2]);
+            res_re=0;
+        }
+        
     }
 
     return 0;

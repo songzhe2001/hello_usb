@@ -29,7 +29,7 @@ void enable_interrupts();
 void clear_interrupts();
 void start_measurement();
 void stop_measurement();
-void read_measurement_results();
+void read_measurement_results(uint16_t* res);
 void check_cmd();
 void check_conf();
 

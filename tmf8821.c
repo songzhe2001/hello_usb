@@ -1,8 +1,8 @@
 #include "tmf8821.h"
 #include "hardware/i2c.h"
+#include "i2c_usr.h"
 
-
-//计算校验
+// 计算校验
 uint8_t calculate_checksum(uint8_t cmd_stat, uint8_t size, uint8_t *data, uint8_t data_length)
 {
     uint16_t sum = cmd_stat + size;
@@ -135,8 +135,8 @@ void load_common_config()
 // 配置测量周期为100ms
 void set_measurement_period()
 {
-    i2c_write_byte(0x24, 0xc8); // 设置测量周期为100ms
-    i2c_write_byte(0x25, 0x00); // 高位字节
+    i2c_write_byte(0x24, 0x90); // 设置测量周期为100ms
+    i2c_write_byte(0x25, 0x01); // 高位字节
     printf("Measurement period set to 100ms.\n");
 }
 
@@ -195,23 +195,27 @@ void stop_measurement()
 }
 
 // 读取测量结果
-void read_measurement_results()
+void read_measurement_results(uint16_t *res)
 {
     uint8_t result_id = i2c_read_byte(0x20); // 读取结果ID
     if (result_id == 0x10)
     { // 检查是否为测量结果
-        uint8_t reg = 0x20;
+        uint8_t conf = 0;
         uint8_t dm;
         uint8_t dl;
-        reg = 0x3A;
-        i2c_write_blocking(I2C_PORT, I2C_ADDRESS, &reg, 1, true); // 设置读取起始地址
-        i2c_read_blocking(I2C_PORT, I2C_ADDRESS, &dm, 1, false);  // 读取结果数据
-
-        reg = 0x39;
-        i2c_write_blocking(I2C_PORT, I2C_ADDRESS, &reg, 1, true); // 设置读取起始地址
-        i2c_read_blocking(I2C_PORT, I2C_ADDRESS, &dl, 1, false);  // 读取结果数据
-
-        printf("value: 0x%02X%02X\n", dm, dl);
+        uint8_t i = 0x38;
+        uint8_t j = 0;
+        // uint8_t k = 0;
+        // dl = i2c_read_byte(0x3C);
+        //     dm = i2c_read_byte(0x3D);
+        //     printf("value: 0x%02X%02X    ", dm, dl);
+        while (1)
+        {
+            res[j] = i2c_read_byte(i+j);
+            j++;
+            if(j>=27)
+                break;
+        }
     }
     else
     {
