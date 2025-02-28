@@ -135,8 +135,8 @@ void load_common_config()
 // 配置测量周期为100ms
 void set_measurement_period()
 {
-    i2c_write_byte(0x24, 0x90); // 设置测量周期为100ms
-    i2c_write_byte(0x25, 0x01); // 高位字节
+    i2c_write_byte(0x24, 0x50); // 设置测量周期为100ms
+    i2c_write_byte(0x25, 0x00); // 高位字节
     printf("Measurement period set to 100ms.\n");
 }
 

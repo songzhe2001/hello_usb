@@ -15,16 +15,16 @@ void gpio_callback(uint gpio, uint32_t events)
     read_measurement_results((uint16_t *) res);
   
     printf("value:\n");
-    printf(" 0x%02X%02X  ", res[2], res[1]);
-    printf(" 0x%02X%02X  ", res[5], res[4]);
-    printf(" 0x%02X%02X\n", res[8], res[7]);
-    printf(" 0x%02X%02X  ", res[11], res[10]);
-    printf(" 0x%02X%02X  ", res[14], res[13]);
-    printf(" 0x%02X%02X\n", res[17], res[16]);
-    printf(" 0x%02X%02X  ", res[20], res[19]);
-    printf(" 0x%02X%02X  ", res[23], res[22]);
-    printf(" 0x%02X%02X\n\n", res[26], res[25]);
-
+    printf(" 0x%02X%02X\n", res[2], res[1]);
+    if(res[2]==0)
+    {
+        if((res[1]==0x53)||(res[1]==0x52))
+            printf("可能是运动饮料\n");
+        if((res[1]==0x55))
+            printf("可能是水\n");
+        if ((res[1] == 0x57) || (res[1] == 0x58))
+             printf("可能是可乐溶液\n");
+    }
 }
 
 int main()
@@ -91,6 +91,12 @@ int main()
     set_spad_mask();
     i2c_write_byte(0x31, 0x03);
     write_common_config();
+
+    i2c_write_byte(CMD_STAT_REG, 0x6E); // 写入公共配置页面
+    while (i2c_read_byte(CMD_STAT_REG) != 0x00)
+    { // 等待命令完成
+        sleep_ms(10);
+    }
 
     printf("Check factory register value: 0x%02X\n", i2c_read_byte(0x07));
 
